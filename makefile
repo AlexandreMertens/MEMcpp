@@ -3,11 +3,9 @@
 source_dir := src/
 include_dir := interface/
 objs_dir := objs/
-# Just to get the includes needed to define CPPProcess class... Might have to be moved to this project?
-process_dir := /home/fynu/swertz/scratch/Madgraph/madgraph5/cpp_pp_ttx_fullylept/
 
-CXXFLAGS := -std=c++14 -O2 -g -Wall $(shell root-config --cflags) $(shell lhapdf-config --cflags) -I$(include_dir) -I$(process_dir)
-LDFLAGS := -lm $(shell root-config --libs --glibs) -lGenVector $(shell lhapdf-config --ldflags) -lcuba -lDelphes
+CXXFLAGS := -std=c++14 -O3 -g -Wall $(shell root-config --cflags) $(shell lhapdf-config --cflags) -I$(include_dir)
+LDFLAGS := $(shell root-config --libs) -lGenVector $(shell lhapdf-config --ldflags) -lcuba -lDelphes
 CXX := g++
 
 _common_objs := binnedTF.o jacobianD.o MEEvent.o MEWeight.o transferFunction.o utils.o
@@ -17,14 +15,8 @@ common_deps := $(patsubst %,$(include_dir)/%,$(common_deps))
 
 #### TTbar specific variables
 
-#ttbar_PROC_DIR := /home/fynu/swertz/scratch/Madgraph/madgraph5/cpp_test_gg_ttx_epmum_Wb/
-#ttbar_MGproc := $(ttbar_PROC_DIR)/SubProcesses/P0_Sigma_sm_gg_epvebmumvmxbx/cpp_test_gg_ttx_epmum_Wb.o
-
-ttbar_proc_dir := /home/fynu/swertz/scratch/Madgraph/madgraph5/cpp_pp_ttx_fullylept/
-ttbar_proc_obj := $(ttbar_proc_dir)/SubProcesses/P0_Sigma_sm_gg_mupvmbmumvmxbx/cpp_pp_ttx_fullylept.o
-
-#ttbar_PROC_DIR := /home/fynu/swertz/scratch/Madgraph/madgraph5/cpp_ttbar_epmum_NOPOW/
-#ttbar_MGproc := $(ttbar_PROC_DIR)/SubProcesses/P0_Sigma_sm_gg_epvebmumvmxbx/CPPProcess.o
+ttbar_proc_dir := MatrixElements/cppmem_pp_ttx_epmum/
+ttbar_proc_obj := $(ttbar_proc_dir)/SubProcesses/P1_Sigma_sm_gg_epvebmumvmxbx/cppmem_pp_ttx_epmum.o
 
 ttbar_dir := ttbar/
 ttbar_exec := $(ttbar_dir)/ME_ttbar

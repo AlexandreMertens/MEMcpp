@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#define _USE_MATH_DEFINES // include M_PI constant
 #include <cmath>
 
 #include "Math/Vector4D.h"
@@ -10,9 +11,15 @@
 
 using namespace std;
 
-int ComputeTransformD(const double &s13, const double &s134, const double &s25, const double &s256,
-                      const ROOT::Math::PxPyPzEVector &p3, const ROOT::Math::PxPyPzEVector &p4, const ROOT::Math::PxPyPzEVector &p5, const ROOT::Math::PxPyPzEVector &p6, const ROOT::Math::PxPyPzEVector &Met, const ROOT::Math::PxPyPzEVector &ISR,
-                      std::vector<ROOT::Math::PxPyPzEVector> &p1, std::vector<ROOT::Math::PxPyPzEVector> &p2){
+int ComputeTransformD(const double s13, const double s134, const double s25, const double s256,
+                      const ROOT::Math::PxPyPzEVector &p3, 
+                      const ROOT::Math::PxPyPzEVector &p4, 
+                      const ROOT::Math::PxPyPzEVector &p5, 
+                      const ROOT::Math::PxPyPzEVector &p6, 
+                      const ROOT::Math::PxPyPzEVector &Met, 
+                      const ROOT::Math::PxPyPzEVector &ISR,
+                      std::vector<ROOT::Math::PxPyPzEVector> &p1, std::vector<ROOT::Math::PxPyPzEVector> &p2
+                      ){
   // pT = transverse total momentum of the visible particles
   // It will be used to reconstruct neutrinos, but we want to take into account the measured ISR (pt_isr = - pt_met - pt_vis),
   // so we add pt_isr to pt_vis in order to have pt_vis + pt_nu + pt_isr = 0 as it should be.
@@ -130,37 +137,45 @@ int ComputeTransformD(const double &s13, const double &s134, const double &s25, 
   return p1.size();
 }
 
-double computeJacobianD(const std::vector<ROOT::Math::PxPyPzEVector> &p, const double &sqrt_s){
+double computeJacobianD(
+    const ROOT::Math::PxPyPzEVector &p1, 
+    const ROOT::Math::PxPyPzEVector &p2, 
+    const ROOT::Math::PxPyPzEVector &p3, 
+    const ROOT::Math::PxPyPzEVector &p4, 
+    const ROOT::Math::PxPyPzEVector &p5, 
+    const ROOT::Math::PxPyPzEVector &p6, 
+    const double sqrt_s
+    ){
   
-  const double E1  = p.at(0).E();
-  const double p1x = p.at(0).Px();
-  const double p1y = p.at(0).Py();
-  const double p1z = p.at(0).Pz();
+  const double E1  = p1.E();
+  const double p1x = p1.Px();
+  const double p1y = p1.Py();
+  const double p1z = p1.Pz();
 
-  const double E2  = p.at(1).E();
-  const double p2x = p.at(1).Px();
-  const double p2y = p.at(1).Py();
-  const double p2z = p.at(1).Pz();
+  const double E2  = p2.E();
+  const double p2x = p2.Px();
+  const double p2y = p2.Py();
+  const double p2z = p2.Pz();
 
-  const double E3  = p.at(2).E();
-  const double p3x = p.at(2).Px();
-  const double p3y = p.at(2).Py();
-  const double p3z = p.at(2).Pz();
+  const double E3  = p3.E();
+  const double p3x = p3.Px();
+  const double p3y = p3.Py();
+  const double p3z = p3.Pz();
 
-  const double E4  = p.at(3).E();
-  const double p4x = p.at(3).Px();
-  const double p4y = p.at(3).Py();
-  const double p4z = p.at(3).Pz();
+  const double E4  = p4.E();
+  const double p4x = p4.Px();
+  const double p4y = p4.Py();
+  const double p4z = p4.Pz();
 
-  const double E5  = p.at(4).E();
-  const double p5x = p.at(4).Px();
-  const double p5y = p.at(4).Py();
-  const double p5z = p.at(4).Pz();
+  const double E5  = p5.E();
+  const double p5x = p5.Px();
+  const double p5y = p5.Py();
+  const double p5z = p5.Pz();
 
-  const double E6  = p.at(5).E();
-  const double p6x = p.at(5).Px();
-  const double p6y = p.at(5).Py();
-  const double p6z = p.at(5).Pz();
+  const double E6  = p6.E();
+  const double p6x = p6.Px();
+  const double p6y = p6.Py();
+  const double p6z = p6.Pz();
 
   const double E34  = E3 + E4;
   const double p34x = p3x + p4x;
@@ -208,7 +223,7 @@ double computeJacobianD(const std::vector<ROOT::Math::PxPyPzEVector> &p, const d
                E2*(p34z*p3y*p56x - p34y*p3z*p56x - p34z*p3x*p56y + 
                   p34x*p3z*p56y))*p5z);
                   
-  inv_jac *= 8.*16.*SQ(TMath::Pi()*sqrt_s);
+  inv_jac *= 8.*16.*SQ(M_PI*sqrt_s);
 
   //std::cout << "jac=" << abs(jac) << std::endl;
   

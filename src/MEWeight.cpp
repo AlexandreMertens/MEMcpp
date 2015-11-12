@@ -27,7 +27,9 @@ MEWeight::MEWeight(CPPProcess &process, const std::string pdfName, const std::st
   _process(process),
   _pdf( LHAPDF::mkPDF(pdfName, 0) ),
   _recEvent( new MEEvent() ),
-  _TF( new TransferFunction(fileTF) ){
+  _TF( new TransferFunction(fileTF) ),
+  _isrCorrection(ISRCorrection::transverseISRBoost)
+  {
 
   cout << "Initializing Matrix Element computation with:" << endl;
   cout << "PDF " << pdfName << endl;
@@ -70,6 +72,10 @@ void MEWeight::AddInitialState(int pid1, int pid2){
   }
 }
 
+void MEWeight::SetISRCorrection(const ISRCorrection newISRCorrection){
+  _isrCorrection = newISRCorrection;
+}
+
 double MEWeight::ComputeWeight(double &error){
   
   cout << "Initializing integration..." << endl;
@@ -99,7 +105,7 @@ double MEWeight::ComputeWeight(double &error){
   Suave
 #endif
   (
-    8,                      // (int) dimensions of the integrated volume
+    9,                      // (int) dimensions of the integrated volume
     1,                      // (int) dimensions of the integrand
     (integrand_t) CUBAIntegrand,  // (integrand_t) integrand (cast to integrand_t)
     (void*) this,           // (void*) pointer to additional arguments passed to integrand
@@ -109,17 +115,17 @@ double MEWeight::ComputeWeight(double &error){
     flags,                  // (int) various control flags in binary format, see setFlags function
     0,                      // (int) seed (seed==0 => SOBOL; seed!=0 && control flag "level"==0 => Mersenne Twister)
     0,                      // (int) minimum number of integrand evaluations
-    360000,                 // (int) maximum number of integrand evaluations (approx.!)
+    400000,                 // (int) maximum number of integrand evaluations (approx.!)
 #ifdef VEGAS
-    20000,                  // (int) number of integrand evaluations per interations (to start)
+    25000,                  // (int) number of integrand evaluations per interations (to start)
     0,                      // (int) increase in number of integrand evaluations per interations
-    10000,                   // (int) batch size for sampling
+    12500,                   // (int) batch size for sampling
     0,                      // (int) grid number, 1-10 => up to 10 grids can be stored, and re-used for other integrands (provided they are not too different)
 #endif
 #ifdef SUAVE 
-    40000,                  // (int) number of new integrand evaluations in each subdivision
+    100000,                  // (int) number of new integrand evaluations in each subdivision
     5000,                      // (int) minimum number of samples a previous iteration must contribute to a subregion, to be considered to that subregion's contribution to the integral
-    50,                      // (int) exponent in the norm used to compute fluctuations of a sample
+    2,                      // (int) exponent in the norm used to compute fluctuations of a sample
 #endif
     "",                     // (char*) name of state file => state can be stored and retrieved for further refinement
     NULL,                   // (int*) "spinning cores": -1 || NULL <=> integrator takes care of starting & stopping child processes (other value => keep or retrieve child processes, probably not useful here)

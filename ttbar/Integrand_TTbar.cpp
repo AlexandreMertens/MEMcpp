@@ -20,9 +20,9 @@
 
 #define SQRT_S 13000
 
-using namespace std;
-
 double MEWeight::Integrand(const double* psPoint, const double *weight){
+  using namespace std;
+
   double returnValue = 0.;
 
   for(int i=0; i<4; ++i){
@@ -30,9 +30,18 @@ double MEWeight::Integrand(const double* psPoint, const double *weight){
       return 0;
   }
 
-  const ROOT::Math::PtEtaPhiEVector p3rec( _recEvent->GetP3() );
+  // Handle the 2 b-jet permutations using Monte Carlo
+  ROOT::Math::PtEtaPhiEVector p3rec;
+  ROOT::Math::PtEtaPhiEVector p5rec;
+  if(psPoint[8] <= 0.5){
+    p3rec = _recEvent->GetP3();
+    p5rec = _recEvent->GetP5();
+  }else{
+    p3rec = _recEvent->GetP5();
+    p5rec = _recEvent->GetP3();
+  }
+  
   const ROOT::Math::PtEtaPhiEVector p4rec( _recEvent->GetP4() );
-  const ROOT::Math::PtEtaPhiEVector p5rec( _recEvent->GetP5() );
   const ROOT::Math::PtEtaPhiEVector p6rec( _recEvent->GetP6() );
   const ROOT::Math::PtEtaPhiEVector RecMet( _recEvent->GetMet() );
 
@@ -114,8 +123,8 @@ double MEWeight::Integrand(const double* psPoint, const double *weight){
 
   for(unsigned short i = 0; i < p1vec.size(); ++i){
 
-    const ROOT::Math::PxPyPzEVector p1 = p1vec.at(i);
-    const ROOT::Math::PxPyPzEVector p2 = p2vec.at(i);
+    const ROOT::Math::PxPyPzEVector &p1 = p1vec[i];
+    const ROOT::Math::PxPyPzEVector &p2 = p2vec[i];
 
     /*const ROOT::Math::PxPyPzEVector p13 = p1 + p3;
     const ROOT::Math::PxPyPzEVector p134 = p1 + p3 + p4;
@@ -125,12 +134,14 @@ double MEWeight::Integrand(const double* psPoint, const double *weight){
     cout << "Solution " << i << ":" << endl;
     cout << "Input: W+ mass=" << sqrt(s13) << ", Top mass=" << sqrt(s134) << ", W- mass=" << sqrt(s25) << ", Anti-top mass=" << sqrt(s256) << endl;
     cout << "Output: W+ mass=" << p13.M() << ", Top mass=" << p134.M() << ", W- mass=" << p25.M() << ", Anti-top mass=" << p256.M() << endl << endl;
-    //cout << "Differences: W+ mass=" << sqrt(s13)-p13.M() << ", Top mass=" << sqrt(s134)-p134.M() << ", W- mass=" << sqrt(s25)-p25.M() << ", Anti-top mass=" << sqrt(s256)-p256.M() << endl << endl;
     cout << "Accuracies: " << endl;
     cout << "W+ mass=" << (sqrt(s13)-p13.M())/p13.M() << endl;
     cout << "Top mass=" << (sqrt(s134)-p134.M())/p134.M() << endl;
     cout << "W- mass=" << (sqrt(s25)-p25.M())/p25.M() << endl;
-    cout << "Anti-top mass=" << (sqrt(s256)-p256.M())/p256.M() << endl << endl;*/
+    cout << "Anti-top mass=" << (sqrt(s256)-p256.M())/p256.M() << endl;
+    cout << "Neutrino mass=" << p1.M() << endl;
+    cout << "Anti-neutrino mass=" << p2.M() << endl;
+    cout << "Transverse momentum conservation=" << (p1+p2+p3+p4+p5+p6+ISR).Pt() << endl << endl;*/
     
     /*cout << "Electron (E,Px,Py,Pz) = ";
     cout << p3.E() << "," << p3.Px() << "," << p3.Py() << "," << p3.Pz() << endl;
@@ -147,70 +158,80 @@ double MEWeight::Integrand(const double* psPoint, const double *weight){
   
     const ROOT::Math::PxPyPzEVector tot = p1 + p2 + p3 + p4 + p5 + p6;
 
-    //////////////////////////// ISR CORRECTION ////////////////////////////////
+    ROOT::Math::PxPyPzEVector parton1, parton2;
+    double q1Pz(0), q2Pz(0), ETot(0), PzTot(0);
+    
     /*cout << "**********************" << endl;
     cout << "Total: " << tot  << endl;
     cout << "ISR: " << ISR << endl;*/
-    
-    // Define boost that puts the transverse total momentum vector in its CoM frame 
-    ROOT::Math::PxPyPzEVector tempTot( tot );
-    tempTot.SetPz(0.);
-    ROOT::Math::XYZVector isrDeBoostVector( tempTot.BoostToCM() );
-    
-    //ROOT::Math::XYZVector isrBoostVector = -ISR.BoostToCM(); // this does not give the same result as above, since beta_x(boost) = x/E, and while x_ISR = -x_tot, E_ISR != E_tot
-    
-    // In the "transverse" CoM frame, use total Pz and E to define initial longitudinal quark momenta
-    //cout << "Boost: " << isrBoostVector << endl;
-    const ROOT::Math::Boost isrDeBoost( isrDeBoostVector );
-    const ROOT::Math::PxPyPzEVector newTot( isrDeBoost*tot );
-    const double ETot = newTot.E();
-    const double PzTot = newTot.Pz();
-
-    const double q1Pz = (PzTot + ETot)/2.;
-    const double q2Pz = (PzTot - ETot)/2.;
-  
-    if(q1Pz > SQRT_S/2. || q2Pz < -SQRT_S/2. || q1Pz < 0. || q2Pz > 0.)
-      continue;
-    
-    ROOT::Math::PxPyPzEVector parton1(0., 0., q1Pz, q1Pz);
-    ROOT::Math::PxPyPzEVector parton2(0., 0., q2Pz, abs(q2Pz));
-
-    /*cout << "Before:" << endl;
-    cout << " Parton1: " << parton1 << endl;
-    cout << " Parton2: " << parton2 << endl;*/
    
-    // Boost initial parton momenta by the opposite of the transverse boost needed to put the whole system in its CoM
-    const ROOT::Math::Boost isrBoost( -isrDeBoostVector );
-    parton1 = isrBoost*parton1;
-    parton2 = isrBoost*parton2;
-
-    /*cout << "After:" << endl;
-    cout << " Parton1: " << parton1 << endl;
-    cout << " Parton2: " << parton2 << endl;*/
-   
-    //ROOT::Math::PxPyPzEVector testT = parton1 + parton2 + ISR;
-    //ROOT::Math::PxPyPzEVector testT = -parton1 - parton2 + p1 + p2 + p3 + p4 + p5 + p6;
-    //cout << "Test transverse: " << testT << endl;
+    if(_isrCorrection == ISRCorrection::transverseISRBoost){
+      
+      //////////////////////////// ISR CORRECTION ////////////////////////////////
     
-    ///////////////// NO ISR CORRECTION //////////////////////////////////////////
-    /*const double ETot = tot.E();
-    const double PzTot = tot.Pz();
+      // Define boost that puts the transverse total momentum vector in its CoM frame 
+      ROOT::Math::PxPyPzEVector tempTot( tot );
+      tempTot.SetPz(0.);
+      ROOT::Math::XYZVector isrDeBoostVector( tempTot.BoostToCM() );
+      
+      // In the "transverse" CoM frame, use total Pz and E to define initial longitudinal quark momenta
+      //cout << "Boost: " << isrDeBoostVector << endl;
+      const ROOT::Math::Boost isrDeBoost( isrDeBoostVector );
+      const ROOT::Math::PxPyPzEVector newTot( isrDeBoost*tot );
+      ETot = newTot.E();
+      PzTot = newTot.Pz();
 
-    const double q1Pz = (PzTot + ETot)/2.;
-    const double q2Pz = (PzTot - ETot)/2.;
-    
-    if(q1Pz > SQRT_S/2. || q2Pz < -SQRT_S/2. || q1Pz < 0. || q2Pz > 0.)
-      continue;
+      q1Pz = (PzTot + ETot)/2.;
+      q2Pz = (PzTot - ETot)/2.;
   
-    ROOT::Math::PxPyPzEVector parton1(0., 0., q1Pz, q1Pz);
-    ROOT::Math::PxPyPzEVector parton2(0., 0., q2Pz, abs(q2Pz));*/
-    //////////////////////////////////////////////////////////////////////////////   
+      if(q1Pz > SQRT_S/2. || q2Pz < -SQRT_S/2. || q1Pz < 0. || q2Pz > 0.)
+        continue;
+      
+      parton1.SetCoordinates(0., 0., q1Pz, q1Pz);
+      parton2.SetCoordinates(0., 0., q2Pz, abs(q2Pz));
+
+      /*cout << "Before:" << endl;
+      cout << " Parton1: " << parton1 << endl;
+      cout << " Parton2: " << parton2 << endl;*/
+   
+      // Boost initial parton momenta by the opposite of the transverse boost needed to put the whole system in its CoM
+      const ROOT::Math::Boost isrBoost( -isrDeBoostVector );
+      parton1 = isrBoost*parton1;
+      parton2 = isrBoost*parton2;
+
+      /*cout << "After:" << endl;
+      cout << " Parton1: " << parton1 << endl;
+      cout << " Parton2: " << parton2 << endl;*/
+   
+      //ROOT::Math::PxPyPzEVector testT = parton1 + parton2 + ISR;
+      //ROOT::Math::PxPyPzEVector testT = -parton1 - parton2 + p1 + p2 + p3 + p4 + p5 + p6;
+      //cout << "Test transverse: " << testT << endl;
+
+    } else if (_isrCorrection == ISRCorrection::noCorrection ){
+    
+      ///////////////// NO ISR CORRECTION //////////////////////////////////////////
+      ETot = tot.E();
+      PzTot = tot.Pz();
+
+      q1Pz = (PzTot + ETot)/2.;
+      q2Pz = (PzTot - ETot)/2.;
+      
+      if(q1Pz > SQRT_S/2. || q2Pz < -SQRT_S/2. || q1Pz < 0. || q2Pz > 0.)
+        continue;
+  
+      parton1.SetCoordinates(0., 0., q1Pz, q1Pz);
+      parton2.SetCoordinates(0., 0., q2Pz, abs(q2Pz));
+      //////////////////////////////////////////////////////////////////////////////   
+
+    }
+
+    q1Pz = parton1.Pz();
+    q2Pz = parton2.Pz();
     
     //cout << "===> Eext=" << ETot << ", Pzext=" << PzTot << ", q1Pz=" << q1Pz << ", q2Pz=" << q2Pz << endl << endl;
     
     // Compute jacobian from change of variable:
-    vector<ROOT::Math::PxPyPzEVector> momenta( { p1, p2, p3, p4, p5, p6 } );
-    const double jacobian = computeJacobianD(momenta, SQRT_S);
+    const double jacobian = computeJacobianD(p1, p2, p3, p4, p5, p6, SQRT_S);
     if(jacobian <= 0.){
       cout << "Jac infinite!" << endl;
       continue;
@@ -285,15 +306,12 @@ double MEWeight::Integrand(const double* psPoint, const double *weight){
       }
     }
 
-    //cout << "Found PDF1 = " << pdf1_1 << ", PDF2 = " << pdf1_2 << ", PS in = " << PhaseSpaceIn << ", PS out = " << PhaseSpaceOut << ", jac = " << jac << endl;
-    //cout << "===> Matrix element = " << matrix_elements1[0] << ", prod = " << thisSolResult << ", multiplicity = " << countEqualSol << endl << endl; 
-
     // If we have included the next solutions already, skip them!
     i += countEqualSol - 1;
     countSol += countEqualSol;
   }
 
-  //cout << "## Phase Space point done. Integrand = " << integrand << ", flatterjac = " << flatterJac << ", prod = " << integrand*flatterJac <<  endl;
+  //cout << "## Phase Space point done. Integrand = " << returnValue << endl; 
 
   return returnValue;
 }

@@ -4,20 +4,24 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <memory>
 
-#include "src/process_base_classes.h"
-//#include "SubProcesses/P0_Sigma_sm_gg_epvebmumvmxbx/CPPProcess.h"
+#include "process_base_classes.h"
 
 #include "LHAPDF/LHAPDF.h"
 #include "LHAPDF/PDFSet.h"
 
 #include "Math/Vector4D.h"
-#include "TH1D.h"
 
 #include "transferFunction.h"
 #include "MEEvent.h"
 
 int CUBAIntegrand(const int *nDim, const double* psPoint, const int *nComp, double *value, void *inputs, const int *nVec, const int *core, const double *weight);
+
+enum class ISRCorrection {
+  noCorrection = 0,
+  transverseISRBoost = 1
+};
 
 class MEWeight{
   public:
@@ -30,6 +34,7 @@ class MEWeight{
   void SetEvent(const ROOT::Math::PtEtaPhiEVector &ep, const ROOT::Math::PtEtaPhiEVector &mum, const ROOT::Math::PtEtaPhiEVector &b, const ROOT::Math::PtEtaPhiEVector &bbar, const ROOT::Math::PtEtaPhiEVector &met);
   void AddTF(const std::string particleName, const std::string histName);
   void AddInitialState(int pid1, int pid2);
+  void SetISRCorrection(const ISRCorrection newISRCorrection);
 
   MEWeight(CPPProcess &process, const std::string pdfName, const std::string fileTF);
   ~MEWeight();
@@ -41,6 +46,7 @@ class MEWeight{
   LHAPDF::PDF* _pdf;
   MEEvent* _recEvent;
   TransferFunction* _TF;
+  ISRCorrection _isrCorrection;
 };
 
 inline double MEWeight::ComputePdf(const int &pid, const double &x, const double &q2){

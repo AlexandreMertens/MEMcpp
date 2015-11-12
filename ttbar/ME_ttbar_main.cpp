@@ -10,9 +10,8 @@
 #include "TFile.h"
 #include "TClonesArray.h"
 
-//#include "SubProcesses/P0_Sigma_sm_gg_epvebmumvmxbx/cpp_test_gg_ttx_epmum_Wb.h"
-#include "SubProcesses/P0_Sigma_sm_gg_mupvmbmumvmxbx/cpp_pp_ttx_fullylept.h"
-//#include "SubProcesses/P0_Sigma_sm_gg_epvebmumvmxbx/CPPProcess.h"
+#include "SubProcesses/P1_Sigma_sm_gg_epvebmumvmxbx/cppmem_pp_ttx_epmum.h"
+typedef cppmem_pp_ttx_epmum MyTTbarProcess;
 
 #include "MEWeight.h"
 
@@ -54,11 +53,9 @@ int main(int argc, char *argv[])
   if(end_evt >= chain.GetEntries())
     end_evt = chain.GetEntries()-1;
 
-  //_process = new cpp_test_gg_ttx_epmum_Wb(paramCardPath);
-  //_process = new CPPProcess();
-  //_process->initProc(paramCardPath);
   // Create CPPProcess and MEWeight objects
-  cpp_pp_ttx_fullylept myProcess("/home/fynu/swertz/scratch/Madgraph/madgraph5/cpp_ttbar_epmum/Cards/param_card.dat");
+  Parameters_sm myParams("MatrixElements/cppmem_pp_ttx_epmum/Cards/param_card.dat");
+  MyTTbarProcess myProcess(myParams);
   MEWeight* myWeight = new MEWeight(myProcess, "cteq6l1", fileTF);
   
   myWeight->AddTF("electron", "Binned_Egen_DeltaE_Norm_ele");
@@ -113,7 +110,7 @@ int main(int argc, char *argv[])
     TStopwatch chrono;
     chrono.Start();
 
-    for(int permutation = 1; permutation <= 2; permutation++){
+    /*for(int permutation = 1; permutation <= 2; permutation++){
       double weight = 0;
       double error = 0;
 
@@ -127,10 +124,13 @@ int main(int argc, char *argv[])
       Weight_TT_cpp += weight;
       Weight_TT_Error_cpp += pow(error/2,2.);
     }
+    Weight_TT_Error_cpp = TMath::Sqrt(Weight_TT_Error_cpp);*/
+
+    myWeight->SetEvent(gen_ep, gen_mum, gen_b, gen_bbar, gen_Met);
+    Weight_TT_cpp = myWeight->ComputeWeight(Weight_TT_Error_cpp);
 
     time = chrono.CpuTime();
     
-    Weight_TT_Error_cpp = TMath::Sqrt(Weight_TT_Error_cpp);
     Weighted_TT_cpp = true;
 
     cout << "====> Event " << entry << ": weight = " << Weight_TT_cpp << " +- " << Weight_TT_Error_cpp << endl;

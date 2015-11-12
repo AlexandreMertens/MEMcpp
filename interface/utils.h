@@ -58,6 +58,12 @@ inline void flattenBW(const double psPoint, const double mass, const double widt
   jac = range * mass * width / SQ(cos(y));
 }
 
+// If the NWA is used for a particle, a multiplication factor has to be introduced
+// because of the integrated-out delta function
+inline double jacobianNWA(const double mass, const double width){
+  return ( M_PI/2. + atan(mass / width) ) * mass * width;
+}
+
 // Compute cos(x +- 2*pi/3) in a more "analytical" way (pm = +- 1)
 // Useful for solveCubic
 inline double cosXpm2PI3(const double x, const double pm){
@@ -124,10 +130,10 @@ bool solveQuartic(const double a, const double b, const double c, const double d
 // The procedure becomes tricky in some special cases
 // (intersections aligned along x- or y-axis, degenerate conics, ...)
 bool solve2Quads(const double a20, const double a02, const double a11, const double a10, const double a01, const double a00,
-                const double b20, const double b02, const double b11, const double b10, const double b01, const double b00,
-                std::vector<double>& E1, std::vector<double>& E2, 
-                bool verbose = false
-                );
+                 const double b20, const double b02, const double b11, const double b10, const double b01, const double b00,
+                 std::vector<double>& E1, std::vector<double>& E2, 
+                 bool verbose = false
+                 );
 
 // Solves the system:
 // a11*E1*E2 + a10*E1 + a01*E2 + a00 = 0
@@ -136,10 +142,10 @@ bool solve2Quads(const double a20, const double a02, const double a11, const dou
 // Appends the (x,y) solutions to the std::vectors E1, E2, making no attempt to check 
 // whether these vectors are empty.
 bool solve2QuadsDeg(const double a11, const double a10, const double a01, const double a00,
-                   const double b11, const double b10, const double b01, const double b00,
-                   std::vector<double>& E1, std::vector<double>& E2, 
-                   bool verbose = false
-                   );
+                    const double b11, const double b10, const double b01, const double b00,
+                    std::vector<double>& E1, std::vector<double>& E2, 
+                    bool verbose = false
+                    );
 
 // Solves the system:
 // a10*E1 + a01*E2 + a00 = 0

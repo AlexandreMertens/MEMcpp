@@ -174,9 +174,9 @@ bool solveQuartic(const double a, const double b, const double c, const double d
 }
 
 bool solve2Quads(const double a20, const double a02, const double a11, const double a10, const double a01, const double a00,
-                const double b20, const double b02, const double b11, const double b10, const double b01, const double b00,
-                std::vector<double>& E1, std::vector<double>& E2,
-                bool verbose){
+                 const double b20, const double b02, const double b11, const double b10, const double b01, const double b00,
+                 std::vector<double>& E1, std::vector<double>& E2,
+                 bool verbose){
 
   // The procedure used in this function relies on a20 != 0 or b20 != 0
   if(a20 == 0. && b20 == 0.){
