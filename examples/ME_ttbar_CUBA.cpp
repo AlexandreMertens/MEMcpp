@@ -102,10 +102,10 @@ unsigned int setFlags(char verbosity = 0, bool subregion = false, bool retainSta
 class MEEvent{
   public:
 
-  MEEvent();
+  //MEEvent();
   //MEEvent(const TLorentzVector ep, const TLorentzVector mum, const TLorentzVector b, const TLorentzVector bbar, const TLorentzVector met);
   void SetVectors(const TLorentzVector ep, const TLorentzVector mum, const TLorentzVector b, const TLorentzVector bbar, const TLorentzVector met);
-  ~MEEvent();
+  //~MEEvent();
 
   inline TLorentzVector GetP3(void) const { return p3; }
   inline TLorentzVector GetP4(void) const { return p4; }
@@ -113,9 +113,9 @@ class MEEvent{
   inline TLorentzVector GetP6(void) const { return p6; }
   inline TLorentzVector GetMet(void) const { return Met; }
 
-  void writeHists(void);
+  //void writeHists(void);
 
-  TH1D* GetTTbar();
+  //TH1D* GetTTbar();
   
   private:
 
@@ -125,14 +125,14 @@ class MEEvent{
   TH1D *hst_We;
   TH1D *hst_t;
   TH1D *hst_tbar;*/
-  TH1D *hst_TTbar;
+  //TH1D *hst_TTbar;
   //TH1I *hst_countSol;
 };
 
-MEEvent::MEEvent(){
-  hst_TTbar = new TH1D("test_TTbar", "test_TTbar", BINNING, START, STOP); 
+//MEEvent::MEEvent(){
+  //hst_TTbar = new TH1D("test_TTbar", "test_TTbar", BINNING, START, STOP); 
   //hst_TTbar->Sumw2();
-}
+//}
 
 /*MEEvent::MEEvent(const TLorentzVector ep, const TLorentzVector mum, const TLorentzVector b, const TLorentzVector bbar, const TLorentzVector met){
   p3 = ep;
@@ -162,24 +162,24 @@ void MEEvent::SetVectors(const TLorentzVector ep, const TLorentzVector mum, cons
   p6 = bbar;
   Met = met;
 
-  if(hst_TTbar)
-    hst_TTbar->Reset();
+  //if(hst_TTbar)
+  //  hst_TTbar->Reset();
 }
 
-MEEvent::~MEEvent(){
+//MEEvent::~MEEvent(){
   /*delete hst_Wm; hst_Wm = NULL;
   delete hst_We; hst_We = NULL;
   delete hst_t; hst_t = NULL;
   delete hst_tbar; hst_tbar = NULL;*/
-  delete hst_TTbar; hst_TTbar = NULL;
+  //delete hst_TTbar; hst_TTbar = NULL;
   //delete hst_countSol; hst_countSol = NULL;
-}
+//}
 
-TH1D* MEEvent::GetTTbar(){
+/*TH1D* MEEvent::GetTTbar(){
   return hst_TTbar;
-}
+}*/
 
-void MEEvent::writeHists(void){
+//void MEEvent::writeHists(void){
   /*TCanvas *c = new TCanvas(TString("We")+"_"+SSTR(count_wgt)+"_"+SSTR(count_perm),"Canvas for plotting",600,600);
   c->cd();
   hst_We->Draw();
@@ -216,13 +216,13 @@ void MEEvent::writeHists(void){
   c->Print(TString("plots/")+SSTR(count_wgt)+"_"+SSTR(count_perm)+"_countSol.png");
   delete c; c = 0;*/
 
-  TCanvas *c = new TCanvas(TString("Mttbar")+"_"+SSTR(count_wgt)+"_"+SSTR(count_perm),"Canvas for plotting",600,600);
+  /*TCanvas *c = new TCanvas(TString("Mttbar")+"_"+SSTR(count_wgt)+"_"+SSTR(count_perm),"Canvas for plotting",600,600);
   c->cd();
   hst_TTbar->Draw();
   c->Write();
   c->Print(TString("plots/Mttbar_")+SSTR(count_wgt)+"_"+SSTR(count_perm)+".png");
   delete c; c = 0;
-}
+}*/
 
 class MEWeight{
   public:
@@ -235,14 +235,14 @@ class MEWeight{
   MEEvent* GetEvent();
   void SetEvent(const TLorentzVector ep, const TLorentzVector mum, const TLorentzVector b, const TLorentzVector bbar, const TLorentzVector met);
 
-  void WriteHist();
+  //void WriteHist();
 
   MEWeight(const string paramCardPath, const string pdfName);
   ~MEWeight();
 
   private:
 
-  TH1D* hst_TTbar;
+  //TH1D* hst_TTbar;
 
   CPPProcess process;
   PDF* pdf;
@@ -259,7 +259,7 @@ MEWeight::MEWeight(const string paramCardPath, const string pdfName){
   pdf = mkPDF(pdfName, 0);
   myEvent = new MEEvent();
 
-  hst_TTbar = new TH1D("DMEM_TTbar", "DMEM  M_{tt}", BINNING, START, STOP);
+  //hst_TTbar = new TH1D("DMEM_TTbar", "DMEM  M_{tt}", BINNING, START, STOP);
   //hst_TTbar->Sumw2();
 }
 
@@ -281,19 +281,19 @@ void MEWeight::SetEvent(const TLorentzVector ep, const TLorentzVector mum, const
   myEvent->SetVectors(ep, mum, b, bbar, met);
 }
 
-void MEWeight::WriteHist(){
+/*void MEWeight::WriteHist(){
 
-  hst_TTbar->Scale(1./hst_TTbar->Integral());
+  hst_TTbar->Scale(1./hst_TTbar->Integral());*/
 
   /*TCanvas *c = new TCanvas("DMEM_TTbar", "Canvas for plotting", 600, 600);
   c->cd();
   hst_TTbar->Draw();*/
   //c->Write();
-  hst_TTbar->Write();
+  //hst_TTbar->Write();
   //c->Print("plots/DMEM_ttbar.png", "png");
   //delete c; c = 0;
 
-}
+//}
 
 double MEWeight::ComputeWeight(double &error){
   
@@ -302,7 +302,7 @@ double MEWeight::ComputeWeight(double &error){
   int neval, nfail;
   double mcResult=0, prob=0;
   
-  char verbosity = 0; // 0-3
+  char verbosity = 1; // 0-3
   bool subregion = false; // true = only last set of samples is used for final evaluation of integral
   bool smoothing = false;
   bool retainStateFile = false; // false => delete state file when integration ends
@@ -325,11 +325,15 @@ double MEWeight::ComputeWeight(double &error){
     0.,                     // (double) requested absolute accuracy |
     flags,                  // (int) various control flags in binary format, see setFlags function
     0,                      // (int) seed (seed==0 => SOBOL; seed!=0 && control flag "level"==0 => Mersenne Twister)
-    5000,                  // (int) minimum number of integrand evaluations
-    50000,                  // (int) maximum number of integrand evaluations (approx.!)
-    5000,                  // (int) number of integrand evaluations per interations (to start)
+    0,                  // (int) minimum number of integrand evaluations
+    /*750000,                  // (int) maximum number of integrand evaluations (approx.!)
+    50000,                  // (int) number of integrand evaluations per interations (to start)
     0,                      // (int) increase in number of integrand evaluations per interations
-    1000,                   // (int) batch size for sampling
+    10000,                   // (int) batch size for sampling*/
+    5000,                  // (int) maximum number of integrand evaluations (approx.!)
+    1000,                  // (int) number of integrand evaluations per interations (to start)
+    0,                      // (int) increase in number of integrand evaluations per interations
+    100,                   // (int) batch size for sampling
     0,                      // (int) grid number, 1-10 => up to 10 grids can be stored, and re-used for other integrands (provided they are not too different)
     "",                     // (char*) name of state file => state can be stored and retrieved for further refinement
     NULL,                   // (int*) "spinning cores": -1 || NULL <=> integrator takes care of starting & stopping child processes (other value => keep or retrieve child processes, probably not useful here)
@@ -349,11 +353,11 @@ double MEWeight::ComputeWeight(double &error){
 
   //myEvent->writeHists();
 
-  if(myEvent->GetTTbar()->Integral()){
+  /*if(myEvent->GetTTbar()->Integral()){
     myEvent->GetTTbar()->Scale(1./myEvent->GetTTbar()->Integral());
     myEvent->GetTTbar()->SetEntries(1);
     hst_TTbar->Add(myEvent->GetTTbar());
-  }
+  }*/
   
   if(std::isnan(error))
   error = 0.;
@@ -367,8 +371,8 @@ MEWeight::~MEWeight(){
   delete pdf; pdf = NULL;
   cout << "Deleting myEvent" << endl;
   delete myEvent; myEvent = NULL;
-  cout << "Deleting hst_TTbar" << endl;
-  delete hst_TTbar; hst_TTbar = NULL;
+  //cout << "Deleting hst_TTbar" << endl;
+  //delete hst_TTbar; hst_TTbar = NULL;
 }
 
 int BWTest(const int *nDim, const double* Xarg, const int *nComp, double *Value, void *inputs){
@@ -482,8 +486,8 @@ int MEFunct(const int *nDim, const double* Xarg, const int *nComp, double *Value
   s256 = pow(M_T,2.);*/
 
   // pT = transverse total momentum of the visible particles
-  //TLorentzVector pT = p3 + p4 + p5 + p6;
-  const TLorentzVector pT = -Met;
+  TLorentzVector pT = p3 + p4 + p5 + p6;
+  //const TLorentzVector pT = -Met;
 
   const double p34 = p3*p4;
   const double p56 = p5*p6;
@@ -618,11 +622,13 @@ int MEFunct(const int *nDim, const double* Xarg, const int *nComp, double *Value
     const TLorentzVector p25 = p2 + p5;
     const TLorentzVector p256 = p2 + p5 + p6;
 
+    const TLorentzVector tot = p1 + p2 + p3 + p4 + p5 + p6;
+    
     /*myWeight->hst_We->Fill(p13.M());
     myWeight->hst_Wm->Fill(p25.M());
     myWeight->hst_t->Fill(p134.M());
     myWeight->hst_tbar->Fill(p256.M());*/
-    /*cout << "Solution " << i << ":" << endl;
+    cout << "Solution " << i << ":" << endl;
     cout << "Input: W+ mass=" << TMath::Sqrt(s13) << ", Top mass=" << TMath::Sqrt(s134) << ", W- mass=" << TMath::Sqrt(s25) << ", Anti-top mass=" << TMath::Sqrt(s256) << endl;
     cout << "Output: W+ mass=" << p13.M() << ", Top mass=" << p134.M() << ", W- mass=" << p25.M() << ", Anti-top mass=" << p256.M() << endl << endl;
     //cout << "Differences: W+ mass=" << TMath::Sqrt(s13)-p13.M() << ", Top mass=" << TMath::Sqrt(s134)-p134.M() << ", W- mass=" << TMath::Sqrt(s25)-p25.M() << ", Anti-top mass=" << TMath::Sqrt(s256)-p256.M() << endl << endl;
@@ -630,7 +636,10 @@ int MEFunct(const int *nDim, const double* Xarg, const int *nComp, double *Value
     cout << "W+ mass=" << (TMath::Sqrt(s13)-p13.M())/p13.M() << endl;
     cout << "Top mass=" << (TMath::Sqrt(s134)-p134.M())/p134.M() << endl;
     cout << "W- mass=" << (TMath::Sqrt(s25)-p25.M())/p25.M() << endl;
-    cout << "Anti-top mass=" << (TMath::Sqrt(s256)-p256.M())/p256.M() << endl << endl;*/
+    cout << "Anti-top mass=" << (TMath::Sqrt(s256)-p256.M())/p256.M() << endl;
+    cout << "Neutrino mass=" << p1.M() << endl;
+    cout << "Neutrino mass=" << p2.M() << endl;
+    cout << "Conservation of impulsion: (" << tot.E() << ", " << tot.Px() << ", " << tot.Py() << "," << tot.Pz() << ")" << endl << endl;
     
     /*cout << "Electron (E,Px,Py,Pz) = ";
     cout << p3.E() << "," << p3.Px() << "," << p3.Py() << "," << p3.Pz() << endl;
@@ -645,8 +654,6 @@ int MEFunct(const int *nDim, const double* Xarg, const int *nComp, double *Value
     cout << "Anti b quark (E,Px,Py,Pz) = ";
     cout << p6.E() << "," << p6.Px() << "," << p6.Py() << "," << p6.Pz() << endl << endl;*/
   
-    const TLorentzVector tot = p1 + p2 + p3 + p4 + p5 + p6;
-    
     const double ETot = tot.E();
     const double PzTot = tot.Pz();
 
@@ -746,7 +753,7 @@ int MEFunct(const int *nDim, const double* Xarg, const int *nComp, double *Value
     i += countEqualSol - 1;
     countSol += countEqualSol;
     
-    myEvent->GetTTbar()->Fill(tot.M(), *weight * (double)countEqualSol * thisSolResult);
+    //myEvent->GetTTbar()->Fill(tot.M(), *weight * (double)countEqualSol * thisSolResult);
   }
   //myWeight->fillCountSol(countSol);
 
@@ -821,7 +828,7 @@ int main(int argc, char *argv[])
   
   MEWeight* myWeight = new MEWeight("/home/fynu/swertz/scratch/Madgraph/madgraph5/cpp_ttbar_epmum/Cards/param_card.dat", "cteq6l1");
 
-  TH1D* truth_TTbar = new TH1D("MTruth_TTbar", "M_{tt}  Truth", BINNING, START, STOP);
+  //TH1D* truth_TTbar = new TH1D("MTruth_TTbar", "M_{tt}  Truth", BINNING, START, STOP);
 
   for(int entry = start_evt; entry <= end_evt ; ++entry){
     // Load selected branches with data from specified event
@@ -874,7 +881,7 @@ int main(int argc, char *argv[])
     TStopwatch chrono;
     chrono.Start();
 
-    truth_TTbar->Fill( (gen_ep + gen_b + gen_mum + gen_bbar + gen_Met).M() );
+    //truth_TTbar->Fill( (gen_ep + gen_b + gen_mum + gen_bbar + gen_Met).M() );
 
     for(int permutation = 1; permutation <= 2; permutation ++){
 
@@ -989,10 +996,11 @@ int main(int argc, char *argv[])
     }
     time = chrono.CpuTime();
 
-    cout << "CPU time : " << chrono.CpuTime() << "  Real-time : " << chrono.RealTime() << endl;
-    
     Weight_TT_Error_cpp = TMath::Sqrt(Weight_TT_Error_cpp);
     Weighted_TT_cpp = true;
+
+    cout << "====> Event " << entry << ": weight = " << Weight_TT_cpp << " +- " << Weight_TT_Error_cpp << endl;
+    cout << "      CPU time : " << chrono.CpuTime() << "  Real-time : " << chrono.RealTime() << endl << endl;
 
     outTree->Fill();
 
@@ -1001,9 +1009,9 @@ int main(int argc, char *argv[])
     //break;
   }
 
-  truth_TTbar->Scale(1./truth_TTbar->Integral());
+  /*truth_TTbar->Scale(1./truth_TTbar->Integral());
   truth_TTbar->Write();
-  myWeight->WriteHist();
+  myWeight->WriteHist();*/
 
   outTree->Write();
   delete myWeight;

@@ -96,7 +96,12 @@ unsigned int setFlags(char verbosity = 0, bool subregion = false, bool retainSta
 class MEWeight{
 	public:
 
+<<<<<<< HEAD
 	MEWeight(const string paramCardPath, const TLorentzVector ep, const TLorentzVector mum, const TLorentzVector met);
+=======
+  MEWeight(const string paramCardPath, const TLorentzVector ep, const TLorentzVector mum, const TLorentzVector b, const TLorentzVector bbar, const TLorentzVector met, double q1gen, double q2gen);
+	//MEWeight(const string paramCardPath, const TLorentzVector ep, const TLorentzVector mum, const TLorentzVector b, const TLorentzVector bbar, const TLorentzVector met);
+>>>>>>> 0bcdf71088ef8c00a78a95cc83e15f7c40f138a3
 	inline double ComputePdf(const int pid, const double x, const double q2);
 
 	inline TLorentzVector GetP3(void) const { return p3; }
@@ -106,6 +111,8 @@ class MEWeight{
 	inline void setProcessMomenta(vector<double*> &p){ process.setMomenta(p); }
 	inline void computeMatrixElements(){ process.sigmaKin(); }
 	inline const double* const getMatrixElements() const { return process.getMatrixElements(); }
+
+  double q1, q2;
 
 	private:
 
@@ -119,6 +126,9 @@ MEWeight::MEWeight(const string paramCardPath, const TLorentzVector ep, const TL
 	p3 = ep;
 	p4 = mum;
 	Met = met;
+
+  q1 = q1gen;
+  q2 = q2gen;
 
 	process.initProc(paramCardPath);
 	pdf = mkPDF("cteq6l1", 0);
@@ -139,6 +149,9 @@ int MEFunct(const int *nDim, const double* Xarg, const int *nComp, double *Value
 	//cout << "Inputs = [" << Xarg[0] << "," << Xarg[1] << "," << Xarg[2] << "," << Xarg[3] << endl;
 
 	MEWeight* myWeight = (MEWeight*) inputs;
+
+	TLorentzVector p1 = myWeight->GetP4();
+	TLorentzVector p2 = myWeight->GetP6();
 
 	TLorentzVector p3 = myWeight->GetP3();
 	TLorentzVector p4 = myWeight->GetP4();
@@ -173,7 +186,9 @@ int MEFunct(const int *nDim, const double* Xarg, const int *nComp, double *Value
 
 	const double range2 = TMath::Pi()/2. + TMath::ATan(M_W/G_W);
 	const double y2 = - TMath::ATan(M_W/G_W) + range2 * Xarg[1];
-	const double s24 = M_W * G_W * TMath::Tan(y2) + pow(M_W,2.);
+	//const double s24 = M_W * G_W * TMath::Tan(y2) + pow(M_W,2.);
+	//const double s24 = SQ(77.8949);
+	const double s24 = SQ((p2+p4).M());
 
         //const double range2 = 4000;
         //const double s24 = 4000 + range2 * Xarg[1];
@@ -220,16 +235,15 @@ int MEFunct(const int *nDim, const double* Xarg, const int *nComp, double *Value
         // 1) phase-space point kinematic
 
 	// pb = transverse total momentum of the visible particles
-	const TLorentzVector pb = p3+p4;
+	const TLorentzVector pb = p3+p4+p1+p2;
+	//const TLorentzVector pb = p3+p4;
+	//const TLorentzVector pb = -Met;
 
 	// P2x = a1 E2 + a2 P2y + a3
 	// P2z = b1 E2 + b2 P2y + b3
 
 	const double Qm = SQRT_S*(q1-q2)/2.;
 	const double Qp = SQRT_S*(q1+q2)/2.;
-
-        //cout << "Qm : " << Qm << endl;
-        //cout << "Qp : " << Qp << endl;	
 
         const double ka = -4*p4.Px()*p3.Pz()+4*p3.Px()*p4.Pz();
 	const double kb = 2*(p3.Pz()*p4.Px()-p3.Px()*p4.Pz());
@@ -473,7 +487,7 @@ int MEFunct(const int *nDim, const double* Xarg, const int *nComp, double *Value
 	return 0;
 }
 
-double ME(double *error, TLorentzVector ep, TLorentzVector mum, TLorentzVector Met, double *time){
+double ME(double *error, TLorentzVector ep, TLorentzVector mum, TLorentzVector Met, TLorentzVector nu1, TLorentzVector nu2, double q1, double q2, double *time){
 	
 	/*TH1D *hst_Wm = new TH1D("test_mu", "test_1D", 150,0,150);
 	TH1D *hst_We = new TH1D("test_ep", "test_1D", 150,0,150);
@@ -487,7 +501,6 @@ double ME(double *error, TLorentzVector ep, TLorentzVector mum, TLorentzVector M
 
 
 	MEWeight myWeight("/home/fynu/amertens/scratch/MatrixElement/MG5_aMC_v2_2_3/uu_ww_1d_cpp/Cards/param_card.dat", ep, mum, Met);
-
 
 	int neval, nfail;
 	double mcResult=0, mcError=0, prob=0;
@@ -717,7 +730,7 @@ int main(int argc, char *argv[])
 		treeReader->ReadEntry(entry);
 		chain.GetEntry(entry);
 
-		TLorentzVector gen_ep, gen_mum, gen_Met, gen_nm, gen_ne;
+		TLorentzVector gen_ep, gen_mum, gen_Met, gen_nm, gen_ne, gen_b, gen_bbar;
 
 		GenParticle *gen;
 
@@ -734,24 +747,34 @@ int main(int argc, char *argv[])
 					gen_mum = gen->P4();
 					//count_mum++;
 				}
-				else if (gen->PID == 12) {gen_Met += gen->P4(); gen_ne = gen->P4();}
-				else if (gen->PID == -14) {gen_Met += gen->P4(); gen_nm = gen->P4();}
-			}
+				else if (gen->PID == 12) {gen_Met += gen->P4();/* gen_ne = gen->P4();*/}
+				else if (gen->PID == -14) {gen_Met += gen->P4();/* gen_nm = gen->P4();*/}
+        if(gen->PID == 5){ gen_b = gen->P4() ; }
+        if(gen->PID == -5){ gen_bbar = gen->P4() ; }
+        
+        if(gen->PID == 24)
+          cout << "W+ mass " << gen->P4().M() << endl;
+        if(gen->PID == -24)
+          cout << "W- mass " << gen->P4().M() << endl;
+      }
 		}
-
-                /*
 
 		cout << "p2x : " << gen_ne.Px() << " , p2y : " << gen_ne.Py() << " , p2z : " << gen_ne.Pz() << " , E2 : " << gen_ne.E() << endl;
 		cout << "p2x : " << gen_nm.Px() << " , p2y : " << gen_nm.Py() << " , p2z : " << gen_nm.Pz() << " , E2 : " << gen_nm.E() << endl;
 
-		double Pzext = (gen_Met+gen_ep+gen_mum).Pz();
-		double Eext  = (gen_Met+gen_ep+gen_mum).E();
+		double Pzext = (gen_Met+gen_ep+gen_mum+gen_b+gen_bbar).Pz();
+		double Eext  = (gen_Met+gen_ep+gen_mum+gen_b+gen_bbar).E();
 
-		cout << "pz   : " << (gen_Met+gen_ep+gen_mum).Pz() << endl;
-		cout << "etot : " << (gen_Met+gen_ep+gen_mum).E() << endl;
-		cout << "q1 : " << (Pzext+Eext)/(2*4000) << endl;;
-		cout << "q2 : " << (Pzext-Eext)/(2*4000) << endl;;
-	
+    cout << "Momentum test " << (gen_ep+gen_mum+gen_Met+gen_b+gen_bbar).Px() << endl;
+
+		cout << "pz   : " << (gen_Met+gen_ep+gen_mum+gen_b+gen_bbar).Pz() << endl;
+		cout << "etot : " << (gen_Met+gen_ep+gen_mum+gen_b+gen_bbar).E() << endl;
+    double q1 = (Pzext+Eext)/(2*4000.);
+    double q2 = (-Pzext+Eext)/(2*4000.);
+		cout << "q1 : " << q1 << endl;;
+		cout << "q2 : " << q2 << endl;;
+
+    gen_Met.SetPtEtaPhiM(gen_Met.Pt(), 0., gen_Met.Phi(), 0.);
 
 
 		//if(count_ep != 1 || count_mum != 1)
@@ -796,7 +819,6 @@ int main(int argc, char *argv[])
 		Weight_TT_cpp = weight;
 		Weight_TT_Error_cpp = error;
 		time = temp_time;
-				
 
                 std::pair<Double_t,Double_t> MW_WE = MwWeight("/home/fynu/amertens/scratch/MatrixElement/MG5_aMC_v2_2_3/uu_ww_2p/Events/MEMpp_test_2P/weights.out", entry);
 
