@@ -13,7 +13,7 @@
 #include "classes/DelphesClasses.h"
 
 #include "src/HelAmps_sm.h"
-#include "SubProcesses/P0_Sigma_sm_gg_epvebmumvmxbx/CPPProcess.h"
+#include "SubProcesses/P0_Sigma_sm_uux_epvemumvmx/CPPProcess.h"
 #include "src/rambo.h"
 #include "src/Parameters_sm.h"
 
@@ -36,10 +36,7 @@
 #include "cuba.h"
 
 #include "utils.h"
-#include "jacobianD.h"
-
-#define M_T 173.
-#define G_T 1.4915
+#include "jacobianF.h"
 
 #define M_W 80.419
 #define G_W 2.0476
@@ -99,13 +96,11 @@ unsigned int setFlags(char verbosity = 0, bool subregion = false, bool retainSta
 class MEWeight{
 	public:
 
-	MEWeight(const string paramCardPath, const TLorentzVector ep, const TLorentzVector mum, const TLorentzVector b, const TLorentzVector bbar, const TLorentzVector met);
+	MEWeight(const string paramCardPath, const TLorentzVector ep, const TLorentzVector mum, const TLorentzVector met);
 	inline double ComputePdf(const int pid, const double x, const double q2);
 
 	inline TLorentzVector GetP3(void) const { return p3; }
 	inline TLorentzVector GetP4(void) const { return p4; }
-	inline TLorentzVector GetP5(void) const { return p5; }
-	inline TLorentzVector GetP6(void) const { return p6; }
 	inline TLorentzVector GetMet(void) const { return Met; }
 
 	inline void setProcessMomenta(vector<double*> &p){ process.setMomenta(p); }
@@ -114,17 +109,15 @@ class MEWeight{
 
 	private:
 
-	TLorentzVector p3, p4, p5, p6, Met;
+	TLorentzVector p3, p4, Met;
 
 	CPPProcess process;
 	PDF *pdf;
 };
 
-MEWeight::MEWeight(const string paramCardPath, const TLorentzVector ep, const TLorentzVector mum, const TLorentzVector b, const TLorentzVector bbar, const TLorentzVector met){
+MEWeight::MEWeight(const string paramCardPath, const TLorentzVector ep, const TLorentzVector mum,  const TLorentzVector met){
 	p3 = ep;
-	p5 = mum;
-	p4 = b;
-	p6 = bbar;
+	p4 = mum;
 	Met = met;
 
 	process.initProc(paramCardPath);
@@ -139,44 +132,6 @@ double MEWeight::ComputePdf(const int pid, const double x, const double q2){
 		return pdf->xfxQ2(pid, x, q2)/x;
 }
 
-int BWTest(const int *nDim, const double* Xarg, const int *nComp, double *Value, void *inputs){
-	*Value = 0.;
-
-	for(int i=0; i<*nDim; ++i){
-		if(Xarg[i] == 1. || Xarg[i] == 0.){
-			mycount++;
-			return 0;
-		}
-	}
-
-	double range1 = TMath::Pi();
-	double y1 = - TMath::Pi()/2. + range1 * Xarg[0];
-	const double s13 = M_W * G_W * TMath::Tan(y1) + pow(M_W,2.);
-
-	double range2 = TMath::Pi();
-	double y2 = - TMath::Pi()/2. + range2 * Xarg[1];
-	const double s134 = M_T * G_T * TMath::Tan(y2) + pow(M_T,2.);
-
-	double range3 = TMath::Pi();
-	double y3 = - TMath::Pi()/2. + range3 * Xarg[2];
-	const double s25 = M_W * G_W * TMath::Tan(y3) + pow(M_W,2.);
-
-	double range4 = TMath::Pi();
-	double y4 = - TMath::Pi()/2. + range4 * Xarg[3];
-	const double s256 = M_T * G_T * TMath::Tan(y4) + pow(M_T,2.);
-	
-	*Value = BreitWigner(s13,M_W,G_W) * BreitWigner(s25,M_W,G_W) * BreitWigner(s134,M_T,G_T) * BreitWigner(s256,M_T,G_T);
-	
-	double flatterJac = range1 * range2 * range3 * range4;
-	flatterJac *= M_W*G_W * M_T*G_T * M_W*G_W * M_T*G_T;
-	flatterJac /= pow(TMath::Cos(y1) * TMath::Cos(y2) * TMath::Cos(y3) * TMath::Cos(y4), 2.);
-	
-	flatterJac /= pow(TMath::Pi(),4);
-
-	*Value *= flatterJac;
-
-	return 0;
-}
 
 int MEFunct(const int *nDim, const double* Xarg, const int *nComp, double *Value, void *inputs){
 
@@ -186,7 +141,7 @@ int MEFunct(const int *nDim, const double* Xarg, const int *nComp, double *Value
 	MEWeight* myWeight = (MEWeight*) inputs;
 
 	TLorentzVector p3 = myWeight->GetP3();
-	TLorentzVector p4 = myWeight->GetP5();
+	TLorentzVector p4 = myWeight->GetP4();
 	TLorentzVector Met = myWeight->GetMet();
 
 	*Value = 0.;
@@ -207,6 +162,12 @@ int MEFunct(const int *nDim, const double* Xarg, const int *nComp, double *Value
 	const double range1 = TMath::Pi()/2. + TMath::ATan(M_W/G_W);
 	const double y1 = - TMath::ATan(M_W/G_W) + range1 * Xarg[0];
 	const double s13 = M_W * G_W * TMath::Tan(y1) + pow(M_W,2.);
+         
+//        const double range1 = 4000;
+//        const double s13 = 4000 + range1 * Xarg[0];
+    
+        //cout << " s13 : " << s13 << endl;
+
 
 	//cout << "y1=" << y1 << ", m13=" << TMath::Sqrt(s13) << endl;
 
@@ -214,21 +175,49 @@ int MEFunct(const int *nDim, const double* Xarg, const int *nComp, double *Value
 	const double y2 = - TMath::ATan(M_W/G_W) + range2 * Xarg[1];
 	const double s24 = M_W * G_W * TMath::Tan(y2) + pow(M_W,2.);
 
+        //const double range2 = 4000;
+        //const double s24 = 4000 + range2 * Xarg[1];
 
-	//const double q1 = Xarg[2]/50.0;
-	//const double q2 = -Xarg[3]/50.0;
-	//
-	const double q1 = 0.0615737;
-	const double q2 = 0.0082855;
+
+        //cout << " s24 : " << s24 << endl;
+
+
+        const double range4 = 2000;
+        const double range3 = 10;
+        
+
+
+	const double sqrt_shat = range4*Xarg[2];
+	//const double rapidity = 0.5*log((shat+171.0)/(shat-171.0)); //-2+2*Xarg[3];
+        const double rapidity = -5+range3*Xarg[3];
+
+        //cout << " shat : " << shat << " rapidity : " << rapidity << endl;
+
+        const double q2 = TMath::Exp(-rapidity)*sqrt_shat/SQRT_S;
+        const double q1 = TMath::Exp(rapidity)*sqrt_shat/SQRT_S;
+
+        //const double q1 = range3*Xarg[2];
+        //const double q2 = range4*Xarg[3];
+
+
+        //cout <<" q1, q2 " <<  q1 << " " << q2 << endl;
+
+        //const double pz_tot = SQRT_S/2.0 * (q1-q2);
+        //cout << " pz   : " << pz_tot << endl;
+
+
+
+        //const double Jac_dsdy = 2/(SQRT_S*SQRT_S)*pow(sqrt_shat*sqrt_shat,-3/2);
+
+
+        const double Jac_dsdy = 2*sqrt(q1*q2)/SQRT_S;
 
 	//cout << "y2=" << y2 << ", M24=" << TMath::Sqrt(s24) << endl;
 
-	//if(s13 > s134 || s25 > s256 || s13 < p3.M() || s25 < p5.M()){
-		//cout << "Masses too small!" << endl;
-	//	mycount++;
-	//	return 0;
-	//}
 
+
+        // Starting the weight computation:
+        // 1) phase-space point kinematic
 
 	// pb = transverse total momentum of the visible particles
 	const TLorentzVector pb = p3+p4;
@@ -236,47 +225,30 @@ int MEFunct(const int *nDim, const double* Xarg, const int *nComp, double *Value
 	// P2x = a1 E2 + a2 P2y + a3
 	// P2z = b1 E2 + b2 P2y + b3
 
-	const double Qm = SQRT_S*(q1-q2)/2;
-	const double Qp = SQRT_S*(q1+q2)/2;
-	
-        const double ka = -4*p4.Px()*p3.Pz()+4*p3.Px()+p4.Pz();
+	const double Qm = SQRT_S*(q1-q2)/2.;
+	const double Qp = SQRT_S*(q1+q2)/2.;
+
+        //cout << "Qm : " << Qm << endl;
+        //cout << "Qp : " << Qp << endl;	
+
+        const double ka = -4*p4.Px()*p3.Pz()+4*p3.Px()*p4.Pz();
 	const double kb = 2*(p3.Pz()*p4.Px()-p3.Px()*p4.Pz());
 
-	const double b1 = -(1/kb) * (2*p4.E()*p3.Px()-2*p3.E()*p4.Px());
-	const double b2 = -(1/kb) * (2*p3.Py()*p4.Px()-2*p3.Px()*p4.Py());
-	const double b3 = -(1/kb) * (pow(p4.M(),2)*p3.Px()-2*p3.E()*pb.E()*p4.Px()+pow(p3.M(),2)*p4.Px()+2*p3.Px()*p4.Px()*pb.Px()+2*p3.Py()*p4.Px()*pb.Py()+2*p3.Pz()*p4.Px()*pb.Pz()-2*p3.Pz()*p4.Px()*Qm+2*p3.E()*p4.Px()*Qp-p4.Px()*s13-p3.Px()*s24);
+        const double b1 = -(1./kb) * (2*p4.E()*p3.Px()-2*p3.E()*p4.Px());
+        const double b2 = -(1./kb) * (2*p3.Py()*p4.Px()-2*p3.Px()*p4.Py());
+        const double b3 = -(1./kb) * (pow(p4.M(),2)*p3.Px()-2*p3.E()*pb.E()*p4.Px()+pow(p3.M(),2)*p4.Px()+2*p3.Px()*p4.Px()*pb.Px()+2*p3.Py()*p4.Px()*pb.Py()+2*p3.Pz()*p4.Px()*pb.Pz()-2*p3.Pz()*p4.Px()*Qm+2*p3.E()*p4.Px()*Qp-p4.Px()*s13-p3.Px()*s24);
 
-	const double a1 = (1/ka)*(-2*p4.Pz()*(-2*p3.E())-2*p3.Pz()*2*p4.E()) ;
-	const double a2 = (1/ka)*(-4*p3.Py()*p4.Pz()-2*p3.Pz()*(-2*p4.Py()));
-	const double a3 = -pb.Px()+(1/ka)*(-4*p4.Px()*pb.Px()*p3.Pz()-4*p3.Py()*pb.Py()*p4.Pz()-2*p4.Pz()*(-2*p3.E()*(pb.E()-Qp)+pow(p3.M(),2)+2*p3.Pz()*(pb.Pz()-Qm)-s13)-2*p3.Pz()*(pow(p4.M(),2)-s24)) ;
-
-
-	cout << "p2x : -51.7897 , p2y : 23.0622 , p2z : 112.36 , E2 : 125.852" << endl;
-	cout << "p2x : 50.8451 , p2y : -21.9069 , p2z : 46.6542 , E2 : 72.3999" << endl;
-	
-	const double test = a1*125.852+a2*(23.0622)+a3;
-	const double test2 = b1*125.852+b2*(23.0622)+b3;
-        const double test3 = a1*72.3999+a2*(-21.9069)+a3;
-        const double test4 = b1*72.3999+b2*(-21.9069)+b3;
-
-	cout << " test p2x : " << test << endl;
-        cout << " test p2z : " << test2 << endl;
-	cout << " test p2x : " << test3 << endl;
-	cout << " test p2z : " << test4 << endl;
-
-
-	//cout << " ka : " << ka << endl;
-	//cout << " kb : " << kb << endl; 
-
-	//cout << " a : " << a1 << " " << a2 << " " << a3 << endl;
-	//cout << " b : " << b1 << " " << b2 << " " << b3 << endl;
+        const double a1 = (1./ka)*(-2*p4.Pz()*((-2)*p3.E())-2*p3.Pz()*2*p4.E());
+        const double a2 = (1./ka)*(-4*p3.Py()*p4.Pz()-2*p3.Pz()*(-2*p4.Py()));
+        const double a3 = -pb.Px()+(1./ka)*(-4*p4.Px()*pb.Px()*p3.Pz()-4*p3.Py()*pb.Py()*p4.Pz()-2*p4.Pz()*(pow(p3.M(),2)+2*p3.Pz()*(pb.Pz()-Qm)-2*p3.E()*(pb.E()-Qp)-s13)-2*p3.Pz()*(pow(p4.M(),2)-s24)) ;
 
 	// 0 = c1 E2 + c2 P2y + c3 
 	// E2 = d1 P2y + d2
 	
-	const double c1 = 2*(Qp-pb.E())+2*pb.Px()*a1-2*(Qm-pb.Pz())*b1;
-	const double c2 = 2*pb.Px()*a2+2*pb.Py()-2*(Qm-pb.Pz())*b2;
-	const double c3 = -pow(Qp-pb.E(),2)+pow(pb.Px(),2)+2*pb.Px()*a3+pow(pb.Py(),2)+pow(Qm-pb.Pz(),2)-2*(Qm-pb.Pz())*b3;
+        const double c1 = 2*(Qp-pb.E())+2*pb.Px()*a1-2*(Qm-pb.Pz())*b1;
+        const double c2 = 2*pb.Px()*a2+2*pb.Py()-2*(Qm-pb.Pz())*b2;
+        const double c3 = -pow(Qp-pb.E(),2)+pow(pb.Px(),2)+2*pb.Px()*a3+pow(pb.Py(),2)+pow(Qm-pb.Pz(),2)-2*(Qm-pb.Pz())*b3;
+
 
 	//cout << " c : " << c1 << " " << c2 << " " << c3 << endl;
 	
@@ -286,20 +258,18 @@ int MEFunct(const int *nDim, const double* Xarg, const int *nComp, double *Value
 	//cout << " d : " << d1 << " " << d2 << endl; 
 
 	// alpha*P2y^2 + beta*P2y + gamma = 0
-	
-	const double alpha = pow(a1,2)*pow(d1,2)+pow(a2,2)+2*a1*a2*d1+1+pow(b1,2)*pow(d1,2)+pow(b2,2)+2*b1*b2*d1-pow(d1,2);
-	const double beta  = 2*pow(a1,2)*d1*d2+2*a1*a3*d1+2*a1*a2*d2+2*a2*a3+2*pow(b1,2)*d1*d2+2*b1*b3*d1+2*b1*b2*d2+2*b2*b3-2*d1*d2;
-	const double gamma = pow(a1,2)*pow(d2,2)+pow(a3,2)+2*a1*a3*d2+pow(b1,2)*pow(d2,2)+pow(b3,2)+2*b1*b3*d2-pow(d2,2);
+
+        const double alpha = pow(a1,2)*pow(d1,2)+pow(a2,2)+2*a1*a2*d1+1+pow(b1,2)*pow(d1,2)+pow(b2,2)+2*b1*b2*d1-pow(d1,2);
+        const double beta  = 2*pow(a1,2)*d1*d2+2*a1*a3*d1+2*a1*a2*d2+2*a2*a3+2*pow(b1,2)*d1*d2+2*b1*b3*d1+2*b1*b2*d2+2*b2*b3-2*d1*d2;
+        const double gamma = pow(a1,2)*pow(d2,2)+pow(a3,2)+2*a1*a3*d2+pow(b1,2)*pow(d2,2)+pow(b3,2)+2*b1*b3*d2-pow(d2,2);
+
 	
 	// Find P2Y
 	vector<double> P2Y;
 
 	solveQuadratic(alpha, beta, gamma, P2Y, false);
 
-	//cout << "coefs=" << a11 << "," << a22 << "," << a12 << "," << a10 << "," << a01 << "," << a00 << endl;
-	//cout << "coefs=" << b11 << "," << b22 << "," << b12 << "," << b10 << "," << b01 << "," << b00 << endl;
-
-	// For each solution (E1,E2), find the neutrino 4-momenta p1,p2, find the initial quark momenta,
+	// For each solution of P2Y, find the neutrino 4-momenta p1,p2, find the initial quark momenta,
 	// evaluate the matrix element and the jacobian
 	
 	if(P2Y.size() == 0){
@@ -308,104 +278,131 @@ int MEFunct(const int *nDim, const double* Xarg, const int *nComp, double *Value
 		return 0;
 	}
 
-	cout << "Checking W Mass... " << P2Y.size() << " entries" << endl;
 	for(unsigned int i=0; i<P2Y.size(); i++){
 		const double P2X = a1*d1*P2Y.at(i)+a1*d2+a2*P2Y.at(i)+a3;
 		const double P2Z = b1*d1*P2Y.at(i)+b1*d2+b2*P2Y.at(i)+b3;
 
-		TLorentzVector P2, W;
+                const double P1X = -pb.Px()-P2X;
+                const double P1Y = -pb.Py()-P2Y.at(i);
+                const double P1Z = Qm-pb.Pz()-P2Z;
+
 		const double P2E = sqrt(pow(P2X,2)+pow(P2Y.at(i),2)+pow(P2Z,2));
-		P2.SetPxPyPzE(P2X,P2Y.at(i),P2Z,P2E);
-		W = P2+p4;
+                const double P1E = sqrt(pow(P1X,2)+pow(P1Y,2)+pow(P1Z,2));
 
-		cout << "  W24 mass : " << sqrt(s24) << " " <<  W.M();
-		//cout << "W13 mass : " << s13 << " " <<  W.M() << endl;
-
-
-	}
-	cout << endl;
-
-
-	/*
-	for(unsigned int i=0; i<E1.size(); i++){
-		if(E1.size() >= 0){
-			if(E1.at(0) > E1.at(1))
-				i = 0;
-			else
-				i = 1;
-		}
-
-		const double e1 = E1.at(i);
-		const double e2 = E2.at(i);
-
-		//cout << endl << "## Evaluating Matrix Element based on solutions e1 = " << e1 << ", e2 = " << e2 << endl << endl;
-
-		if(e1 < 0. || e2 < 0.){
-			//mycount++;
-			//cout << "Neg energies." << endl;
-			//continue;
-			break;
-		}
+		//cout << "  W24 mass : " << sqrt(s24);
+		//cout << "  W13 mass : " << sqrt(s13) << endl;
 
 		TLorentzVector p1,p2;
 
-		p1.SetPx( alpha1*e1 + beta1*e2 + gamma1 );
-		p1.SetPy( alpha2*e1 + beta2*e2 + gamma2 );
-		p1.SetPz( alpha3*e1 + beta3*e2 + gamma3 );
-		p1.SetE(e1);
+		p1.SetPxPyPzE( P1X, P1Y, P1Z, P1E);
+		p2.SetPxPyPzE( P2X, P2Y.at(i), P2Z, P2E );
 
-		p2.SetPx( alpha5*e1 + beta5*e2 + gamma5 );
-		p2.SetPy( alpha6*e1 + beta6*e2 + gamma6 );
-		p2.SetPz( alpha4*e1 + beta4*e2 + gamma4 ); 
-		p2.SetE(e2);
+                bool debug = 0;
+
+                if (debug){
+                  // Test dsig 
+                  p1.SetPxPyPzE(5.9056514367095616      ,   16.011232873614162      ,   441.66223458284003      ,   441.99181638773882);
+                  p2.SetPxPyPzE(2.2306333952012740      ,  0.73903578464239128      ,   109.40085102684131      ,   109.42608511972350);
+                  p3.SetPxPyPzE(18.174801324009138      ,  -14.048879079584797      ,   34.838891037145132      ,   41.730597111209313);
+                  p4.SetPxPyPzE(-26.311086155919973      ,  -2.7013895786717557      ,   1.1557566283843559      ,   26.474639445024639);
+                }
+
+
 
 		const TLorentzVector p13 = p1 + p3;
-		const TLorentzVector p134 = p1 + p3 + p4;
-		const TLorentzVector p25 = p2 + p5;
-		const TLorentzVector p256 = p2 + p5 + p6;
-
+		const TLorentzVector p24 = p2 + p4;
 	
-		const TLorentzVector tot = p1 + p2 + p3 + p4 + p5 + p6;
+		const TLorentzVector tot = p1 + p2 + p3 + p4;
 
 		const double ETot = tot.E();
 		const double PzTot = tot.Pz();
 
 		const double q1Pz = (PzTot + ETot)/2.;
 		const double q2Pz = (PzTot - ETot)/2.;
+               
+
+                if (debug) cout << "q1Pz : " << q1Pz << endl;
+                if (debug) cout << "q2Pz : " << q2Pz << endl;
+ 
 
 		//cout << "===> Eext=" << ETot << ", Pzext=" << PzTot << ", q1Pz=" << q1Pz << ", q2Pz=" << q2Pz << endl << endl;
 	
-		if(q1Pz > SQRT_S/2. || q2Pz < -SQRT_S/2. || q1Pz < 0. || q2Pz > 0.){
+	//	if(q1Pz > SQRT_S/2. || q2Pz < -SQRT_S/2. || q1Pz < 0. || q2Pz > 0.){
 			//cout << "Fail!" << endl;
-			mycount++;
+	//		mycount++;
 			//continue;
-			break;
-		}
-	
+	//		break;
+	//	}
+
+
 		// momentum vector definition
-		vector<double*> p(1, new double[4]);
-		p[0][0] = q1Pz; p[0][1] = 0.0; p[0][2] = 0.0; p[0][3] = q1Pz;
-		p.push_back(new double[4]);
-		p[1][0] = TMath::Abs(q2Pz); p[1][1] = 0.0; p[1][2] = 0.0; p[1][3] = q2Pz;
-		p.push_back(new double[4]);
-		p[2][0] = p3.E(); p[2][1] = p3.Px(); p[2][2] = p3.Py(); p[2][3] = p3.Pz();
-		p.push_back(new double[4]);
-		p[3][0] = p1.E(); p[3][1] = p1.Px(); p[3][2] = p1.Py(); p[3][3] = p1.Pz();
-		p.push_back(new double[4]);
-		p[4][0] = p4.E(); p[4][1] = p4.Px(); p[4][2] = p4.Py(); p[4][3] = p4.Pz();
-		p.push_back(new double[4]);
-		p[5][0] = p5.E(); p[5][1] = p5.Px(); p[5][2] = p5.Py(); p[5][3] = p5.Pz();
-		p.push_back(new double[4]);
-		p[6][0] = p2.E(); p[6][1] = p2.Px(); p[6][2] = p2.Py(); p[6][3] = p2.Pz();
-		p.push_back(new double[4]);
-		p[7][0] = p6.E(); p[7][1] = p6.Px(); p[7][2] = p6.Py(); p[7][3] = p6.Pz();
+		vector<double*> p_1(1, new double[4]);
+		p_1[0][0] = TMath::Abs(q1Pz); p_1[0][1] = 0.0; p_1[0][2] = 0.0; p_1[0][3] = q1Pz;
+		p_1.push_back(new double[4]);
+		p_1[1][0] = TMath::Abs(q2Pz); p_1[1][1] = 0.0; p_1[1][2] = 0.0; p_1[1][3] = q2Pz;
+		p_1.push_back(new double[4]);
+		p_1[2][0] = p3.E(); p_1[2][1] = p3.Px(); p_1[2][2] = p3.Py(); p_1[2][3] = p3.Pz();
+		p_1.push_back(new double[4]);
+		p_1[3][0] = p1.E(); p_1[3][1] = p1.Px(); p_1[3][2] = p1.Py(); p_1[3][3] = p1.Pz();
+		p_1.push_back(new double[4]);
+		p_1[4][0] = p4.E(); p_1[4][1] = p4.Px(); p_1[4][2] = p4.Py(); p_1[4][3] = p4.Pz();
+		p_1.push_back(new double[4]);
+		p_1[5][0] = p2.E(); p_1[5][1] = p2.Px(); p_1[5][2] = p2.Py(); p_1[5][3] = p2.Pz();
+
+
+                vector<double*> p_2(1, new double[4]);
+                p_2[0][0] = TMath::Abs(q2Pz); p_2[0][1] = 0.0; p_2[0][2] = 0.0; p_2[0][3] = q2Pz;
+                p_2.push_back(new double[4]);
+                p_2[1][0] = TMath::Abs(q1Pz); p_2[1][1] = 0.0; p_2[1][2] = 0.0; p_2[1][3] = q1Pz;
+                p_2.push_back(new double[4]);
+                p_2[2][0] = p3.E(); p_2[2][1] = p3.Px(); p_2[2][2] = p3.Py(); p_2[2][3] = p3.Pz();
+                p_2.push_back(new double[4]);
+                p_2[3][0] = p1.E(); p_2[3][1] = p1.Px(); p_2[3][2] = p1.Py(); p_2[3][3] = p1.Pz();
+                p_2.push_back(new double[4]);
+                p_2[4][0] = p4.E(); p_2[4][1] = p4.Px(); p_2[4][2] = p4.Py(); p_2[4][3] = p4.Pz();
+                p_2.push_back(new double[4]);
+                p_2[5][0] = p2.E(); p_2[5][1] = p2.Px(); p_2[5][2] = p2.Py(); p_2[5][3] = p2.Pz();
+
+
+                //cout << "Phase space point : " << endl;
+                //for (int it = 0; it < 6; it++){
+                //  cout << p[it][0] << " " << p[it][1] << " " << p[it][2] << " " << p[it][3] << endl;
+                //}
+
+                // Set momenta for this event
+                myWeight->setProcessMomenta(p_1);
+                // Evaluate matrix element
+                myWeight->computeMatrixElements();
+                const double* const matrix_elements1 = myWeight->getMatrixElements();
+                const double ME1 = matrix_elements1[0];
+                if (debug) cout << "ME1 : " << ME1 << endl;
+
+
+                myWeight->setProcessMomenta(p_2);
+                // Evaluate matrix element
+                myWeight->computeMatrixElements();
+                const double* const matrix_elements2 = myWeight->getMatrixElements();
+                const double ME2 = matrix_elements2[0];
+                if (debug) cout << "ME2 : " << ME2 << endl;
+        
+ 
 
 		// Compute the Pdfs
-		const double pdf1_1 = myWeight->ComputePdf(21,TMath::Abs(q1Pz/(SQRT_S/2.)), pow(M_T,2));
-		const double pdf1_2 = myWeight->ComputePdf(21,TMath::Abs(q2Pz/(SQRT_S/2.)), pow(M_T,2));
+		const double Q_2 = pow(91.1880,2); //pow(ETot,2)
+		const double pdf1_1 = myWeight->ComputePdf(2,TMath::Abs(q1Pz/(SQRT_S/2.)), Q_2);
+		const double pdf1_2 = myWeight->ComputePdf(-2,TMath::Abs(q2Pz/(SQRT_S/2.)), Q_2);
+
+                //cout << "pdfs: " << pdf1_1 << " " << pdf1_2 << " " << pdf1_1*pdf1_2 << endl;
+
+                const double pdf2_1 = myWeight->ComputePdf(2,TMath::Abs(q2Pz/(SQRT_S/2.)), Q_2);
+                const double pdf2_2 = myWeight->ComputePdf(-2,TMath::Abs(q1Pz/(SQRT_S/2.)), Q_2);
+
+                //cout << "pdfs: " << pdf2_1 << " " << pdf2_2 << " " << pdf2_1*pdf2_2 << endl;
 	
-		// Compute flux factor 1/(2*x1*x2*s)
-		const double PhaseSpaceIn = 1.0 / ( 2. * TMath::Abs(q1Pz/(SQRT_S/2.)) * TMath::Abs(q2Pz/(SQRT_S/2.0)) * pow(SQRT_S,2)); 
+		// Compute flux factor 1/(x1*x2*s)
+		const double PhaseSpaceIn = 1.0 / ( TMath::Abs(q1Pz/(SQRT_S/2.)) * TMath::Abs(q2Pz/(SQRT_S/2.0)) * pow(SQRT_S,2)); 
+
+                //const double PhaseSpaceIn = 4.0 / (SQRT_S*SQRT_S);
 
 		// Compute finale Phase Space for observed particles (not concerned by the change of variable)
 		// dPhi = |P|^2 sin(theta)/(2*E*(2pi)^3)
@@ -414,8 +411,6 @@ int MEFunct(const int *nDim, const double* Xarg, const int *nComp, double *Value
 
 		const double PhaseSpaceOut = dPhip3 * dPhip4;
 
-		// Set momenta for this event
-		myWeight->setProcessMomenta(p);
 
 		// Compute jacobian from change of variable:
 		vector<TLorentzVector> momenta;
@@ -423,9 +418,7 @@ int MEFunct(const int *nDim, const double* Xarg, const int *nComp, double *Value
 		momenta.push_back(p2);
 		momenta.push_back(p3);
 		momenta.push_back(p4);
-		momenta.push_back(p5);
-		momenta.push_back(p6);
-		const double jac = computeJacobianD(momenta, SQRT_S);
+		const double jac = computeJacobianF(momenta, SQRT_S);
 		if(jac <= 0.){
 			//cout << "Jac infinite!" << endl;
 			mycount++;
@@ -433,40 +426,50 @@ int MEFunct(const int *nDim, const double* Xarg, const int *nComp, double *Value
 			break;
 		}
 
-		// Evaluate matrix element
-		myWeight->computeMatrixElements();
-		const double* const matrix_elements1 = myWeight->getMatrixElements();
 
-		//cout << "Found PDF1 = " << pdf1_1 << ", PDF2 = " << pdf1_2 << ", PS in = " << PhaseSpaceIn << ", PS out = " << PhaseSpaceOut << ", jac = " << jac << endl;
-		//cout << "===> Matrix element = " << matrix_elements1[0] << ", prod = " << PhaseSpaceIn * matrix_elements1[0] * pdf1_1 * pdf1_2 * PhaseSpaceOut * jac << endl << endl ;	
+		//cout << "Found PDF1 = " << pdf1_1 << ", PDF2 = " << pdf1_2 << ", PS in = " << PhaseSpaceIn << ", PS out = " << PhaseSpaceOut << ", jac = " << jac << " , dsdy = " <<  endl;
+	        //cout << "===> Matrix element = " << matrix_elements1[0] << ", prod = " << PhaseSpaceIn * matrix_elements1[0] * pdf1_1 * pdf1_2 * PhaseSpaceOut * jac << endl << endl ;	
+                //cout << "ME values : " << matrix_elements1[0] << " " << matrix_elements1[1] << endl;
 		
-		*Value += PhaseSpaceIn * matrix_elements1[0] * pdf1_1 * pdf1_2 * PhaseSpaceOut * jac;
+		*Value += PhaseSpaceIn * (ME1* pdf1_1 * pdf1_2 + ME2 * pdf2_1 * pdf2_2) * PhaseSpaceOut * jac * Jac_dsdy;
+                //*Value += PhaseSpaceIn * (matrix_elements1[0] * pdf1_1 * pdf1_2) * PhaseSpaceOut * jac;
+
+                if (debug) {
+                  cout << "pdf products : " << pdf1_1 * pdf1_2  << " " << pdf2_1 * pdf2_2 << endl;
+                  const double dsig = (ME1 * pdf1_1 * pdf1_2 + ME2 * pdf2_1 * pdf2_2);
+                  cout << "dsig : " << (ME1 * pdf1_1 * pdf1_2) << " dsig two inputs " << dsig << endl;
+                }
 
 		// free up memory
-		for(unsigned int i = 0; i < p.size(); ++i){
-			delete p.at(i); p.at(i) = 0;
+		for(unsigned int i = 0; i < p_1.size(); ++i){
+			delete p_1.at(i); p_1.at(i) = 0;
 		}
+                for(unsigned int i = 0; i < p_2.size(); ++i){
+                        delete p_2.at(i); p_2.at(i) = 0;
+                }
 
-		break;
+
 	}
 
-	if(*Value == 0.){
+	if(*Value <= 0.){
 		mycount++;
 		//cout << "Zero!" << endl;
 		return 0;
 	}
 
 	double flatterJac = range1 * range2 * range3 * range4;
-	flatterJac *= M_W*G_W * M_T*G_T * M_W*G_W * M_T*G_T;
-	flatterJac /= pow(TMath::Cos(y1) * TMath::Cos(y2) * TMath::Cos(y3) * TMath::Cos(y4), 2.);
+	flatterJac *= M_W*G_W * M_W*G_W;
+	flatterJac /= pow(TMath::Cos(y1) * TMath::Cos(y2), 2.);
 
 	// ### FOR NWA
 	//double flatterJac = pow(TMath::Pi(),4.) * (M_W*G_W * M_T*G_T * M_W*G_W * M_T*G_T);
 
 	//cout << "## Phase Space point done. Integrand = " << integrand << ", flatterjac = " << flatterJac << ", prod = " << integrand*flatterJac <<	endl;
 
+        //cout << "## Phase Space point done." << " flatterjac = " << flatterJac <<   endl;
+
 	*Value *= flatterJac;
-	*/
+	
 	return 0;
 }
 
@@ -482,9 +485,9 @@ double ME(double *error, TLorentzVector ep, TLorentzVector mum, TLorentzVector M
 	TStopwatch chrono;
 	chrono.Start();
 
-	TLorentzVector b, bbar;
 
-	MEWeight myWeight("/home/fynu/swertz/scratch/Madgraph/madgraph5/cpp_ttbar_epmum/Cards/param_card.dat", ep, mum, b, bbar, Met);
+	MEWeight myWeight("/home/fynu/amertens/scratch/MatrixElement/MG5_aMC_v2_2_3/uu_ww_1d_cpp/Cards/param_card.dat", ep, mum, Met);
+
 
 	int neval, nfail;
 	double mcResult=0, mcError=0, prob=0;
@@ -510,12 +513,12 @@ double ME(double *error, TLorentzVector ep, TLorentzVector mum, TLorentzVector M
 		0.005,					// (double) requested relative accuracy |-> error < max(rel*value,abs)
 		0.,						// (double) requested absolute accuracy |
 		flags,					// (int) various control flags in binary format, see setFlags function
-		8945,						// (int) seed (seed==0 && no control flag => SOBOL; seed!=0 && control flag==0 => Mersenne Twister)
+		8946,						// (int) seed (seed==0 && no control flag => SOBOL; seed!=0 && control flag==0 => Mersenne Twister)
 		0,					// (int) minimum number of integrand evaluations
-		500,					// (int) maximum number of integrand evaluations (approx.!)
-		1000,					// (int) number of integrand evaluations per interations (to start)
+		100000000,					// (int) maximum number of integrand evaluations (approx.!)
+		5000000,					// (int) number of integrand evaluations per interations (to start)
 		0,						// (int) increase in number of integrand evaluations per interations
-		1000,					// (int) batch size for sampling
+		5,					// (int) batch size for sampling
 		0,						// (int) grid number, 1-10 => up to 10 grids can be stored, and re-used for other integrands (provided they are not too different)
 		"", 					// (char*) name of state file => state can be stored and retrieved for further refinement
 		NULL,					// (int*) "spinning cores": -1 || NULL <=> integrator takes care of starting & stopping child processes (other value => keep or retrieve child processes, probably not useful here)
@@ -610,6 +613,42 @@ double ME(double *error, TLorentzVector ep, TLorentzVector mum, TLorentzVector M
 	return mcResult;
 }
 
+std::pair<Double_t,Double_t> MwWeight(TString inlhco, int event_no)
+{
+
+ifstream infile(inlhco);
+Double_t evt;
+Double_t test1;
+Double_t test2;
+Double_t weight, WW_weight;
+Double_t error, WW_error;
+
+WW_weight = 0;
+WW_error = 0;
+
+std::string line;
+
+
+//----------------------- load file  --------------------------------------------------------------
+while (std::getline(infile, line))
+{ 
+  std::istringstream iss(line);
+  if (iss >> evt >> test1 >> test2 >> weight >> error){
+    //std::cout << evt << " " << test1 << " " << test2 << " " << weight << std::endl;
+    if (evt == event_no) {
+      WW_weight = weight;
+      WW_error = error;
+      std::cout << " MW weight " << weight << " +- " << error <<  std::endl; 
+      continue;
+      }
+    }
+  }
+  infile.close();
+
+return std::make_pair(WW_weight,WW_error);
+}
+
+
 
 int main(int argc, char *argv[])
 {
@@ -635,13 +674,19 @@ int main(int argc, char *argv[])
 	TFile* outFile = new TFile(outputFile, "RECREATE");
 	TTree* outTree = chain.CloneTree(0);
 
-	double Weight_TT_cpp, Weight_TT_Error_cpp;
+	double Weight_TT_cpp, Weight_TT_Error_cpp, Weight_MW, Error_MW;
 	bool Weighted_TT_cpp;
 	double time = 0;
+        double combined_error;
 	outTree->Branch("Weight_TT_cpp", &Weight_TT_cpp);
 	outTree->Branch("Weight_TT_Error_cpp", &Weight_TT_Error_cpp);
 	outTree->Branch("Weighted_TT_cpp", &Weighted_TT_cpp);
 	outTree->Branch("Weight_TT_cpp_time", &time);
+
+        outTree->Branch("Weight_MW", &Weight_MW);
+        outTree->Branch("Error_MW", &Error_MW);
+        outTree->Branch("Comb_error", &combined_error);
+
 
 	//ofstream fout(outputFile);
 
@@ -681,7 +726,7 @@ int main(int argc, char *argv[])
 		for (Int_t i = 0; i < branchGen->GetEntries(); i++){
 			gen = (GenParticle *) branchGen->At(i);
 			//cout << "Status=" << gen->Status << ", PID=" << gen->PID << ", E=" << gen->P4().E() << endl;
-			if (gen->Status == 3){
+			if (gen->Status == 1){
 				if (gen->PID == -11){
 					gen_ep = gen->P4();
 					//count_ep++;
@@ -693,6 +738,8 @@ int main(int argc, char *argv[])
 				else if (gen->PID == -14) {gen_Met += gen->P4(); gen_nm = gen->P4();}
 			}
 		}
+
+                /*
 
 		cout << "p2x : " << gen_ne.Px() << " , p2y : " << gen_ne.Py() << " , p2z : " << gen_ne.Pz() << " , E2 : " << gen_ne.E() << endl;
 		cout << "p2x : " << gen_nm.Px() << " , p2y : " << gen_nm.Py() << " , p2z : " << gen_nm.Pz() << " , E2 : " << gen_nm.E() << endl;
@@ -713,126 +760,55 @@ int main(int argc, char *argv[])
 	
 		cout << "From MadGraph:" << endl;
 		cout << "Electron" << endl;
-		cout << gen_ep.E() << "," << gen_ep.Px() << "," << gen_ep.Py() << "," << gen_ep.Pz() << endl;
+		cout << gen_ep.Eta() << "," << gen_ep.Phi() << "," << gen_ep.Pt() << "," << gen_ep.M() << endl;
 		cout << "Muon" << endl;
-		cout << gen_mum.E() << "," << gen_mum.Px() << "," << gen_mum.Py() << "," << gen_mum.Pz() << endl;
+		cout << gen_mum.Eta() << "," << gen_mum.Phi() << "," << gen_mum.Pt() << "," << gen_mum.M() << endl;
 		cout << "MET" << endl;
-		cout << gen_Met.E() << "," << gen_Met.Px() << "," << gen_Met.Py() << "," << gen_Met.Pz() << endl;
+		cout << gen_Met.Eta() << "," << gen_Met.Phi() << "," << gen_Met.Pt() << endl;
+
+
+
+		const double q1 = (Pzext+Eext)/(2.*4000.);
+		const double q2 = -(Pzext-Eext)/(2.*4000.);
+
+                cout << " q1, q2 : " << q1 << " " << q2 << endl;
+
+		const double s13 = pow((gen_ep+gen_ne).M(),2);
+		const double s24 = pow((gen_mum+gen_nm).M(),2);
+
+		cout << " s13 : " << s13 << endl;
+		cout << " s24 : " << s24 << endl;
+
+		TLorentzVector p3 = gen_ep;
+		TLorentzVector p4 = gen_mum;
+		TLorentzVector pb = p3+p4;
+
+                */
 
 		Weight_TT_cpp = 0.;
 		Weight_TT_Error_cpp = 0.;
 
-		for(int permutation = 1; permutation <= 2; permutation ++){
 
-			//entry = 3; permutation = 2;
+		double weight = 0, temp_time;
+		double error = 0;
 
-			count_perm = permutation;
-		
-			double weight = 0, temp_time;
-
-			vector<double> nbr_points;
-			vector<double> wgts;
-			vector<double> wgtsErr;
-			vector<double> wgtsErrX;
-			/*double max_wgt = 0.;
-			double min_wgt = 1.;*/
-
-
-			for(int k = 1; k <= 51; k+=5){
-				/*int nCells = k*10;
-				int nSampl = 100;
-				int nPoints = 50000;*/
-				/*int nCells = k*40;
-				int nSampl = 200;
-				int nPoints = 50000;*/
-				/*int nCells = 750;
-				int nSampl = 50;
-				int nPoints = 50000;*/
-
-				double error = 0;
-
-				if(permutation == 1)
-					weight = ME(&error, gen_ep, gen_mum, gen_Met, &temp_time)/2;
-				if(permutation == 2)
-					weight = ME(&error, gen_ep, gen_mum, gen_Met, &temp_time)/2;
-
-				Weight_TT_cpp += weight;
-				Weight_TT_Error_cpp += pow(error/2,2.);
-				time += temp_time;
+		weight = ME(&error, gen_ep, gen_mum, gen_Met, &temp_time);
+		Weight_TT_cpp = weight;
+		Weight_TT_Error_cpp = error;
+		time = temp_time;
 				
-				/*nbr_points.push_back(nCells);
-				//nbr_points.push_back(nPoints);
-				wgts.push_back(weight);
-				wgtsErr.push_back(error);
-				wgtsErrX.push_back(0.);
-				if(weight > max_wgt) max_wgt = weight;
-				if(weight < min_wgt) min_wgt = weight;
-				
-				if(abs(weight-madweight1[entry]) > abs(madweight2[entry]-weight)){
-					double weight3 = madweight2[entry];
-					madweight2[entry] = madweight1[entry];
-					madweight1[entry] = weight3;
-					
-					weight3 = madweight2Err[entry];
-					madweight2Err[entry] = madweight1Err[entry];
-					madweight1Err[entry] = weight3;
-				}
-				
-				if(madweight1[entry] == 0.)
-					fout << entry << "/" << permutation << ", points=" << nPoints << ", cells=" << nCells << ", evts/cell=" << nSampl << ": weight = " << weight << " +- " << error << " (1)" << endl;
-				else{
-					double ratErr;
-					if(weight != 0)
-						ratErr = weight/madweight1[entry] * TMath::Sqrt( pow(error/weight,2.) + pow(madweight1Err[entry]/madweight1[entry],2.) );
-					else
-						ratErr = 0;
-					fout << entry << "/" << permutation << ", points=" << nPoints << ", cells=" << nCells << ", evts/cell=" << nSampl << ": weight = " << weight << " +- " << error << " (" << weight / (double) madweight1[entry] << " +- " << ratErr << ")" << endl;
-				}*/
 
-				break;
+                std::pair<Double_t,Double_t> MW_WE = MwWeight("/home/fynu/amertens/scratch/MatrixElement/MG5_aMC_v2_2_3/uu_ww_2p/Events/MEMpp_test_2P/weights.out", entry);
 
-			}
+                Weight_MW = MW_WE.first;
+                Error_MW = MW_WE.second;
+	
+                cout << " ratio : " << Weight_TT_cpp/Weight_MW <<  endl; 
 
-			/*double mwX[2] = {nbr_points.at(0), nbr_points.at(nbr_points.size()-1)};
-			double mwErrX[2] = {0.,0.};
-			double correct = madweight1[entry];
-			double correctErr = madweight1Err[entry];
-			if(abs(correct-wgts.at(wgts.size()-1)) > abs(madweight2[entry]-wgts.at(wgts.size()-1))){
-				correct = madweight2[entry];
-				correctErr = madweight2Err[entry];
-			}
-			double madwgts[2] = {correct, correct};
-			double madwgtsErr[2] = {correctErr, correctErr};
-			if(correct < min_wgt)
-				min_wgt = correct;
-			if(correct > max_wgt)
-				max_wgt = correct;
-			
-			TGraphErrors* wgt_vs_points = new TGraphErrors(wgts.size(), &nbr_points[0], &wgts[0], &wgtsErrX[0], &wgtsErr[0]);
-			TGraphErrors* madwgt_vs_points = new TGraphErrors(2, mwX, madwgts, mwErrX, madwgtsErr);
-			TCanvas* c = new TCanvas("c","Canvas for plotting",600,600);
-			c->cd();
-			wgt_vs_points->Draw("AC*");
-			wgt_vs_points->GetHistogram()->SetMaximum(max_wgt+wgtsErr[0]);
-			wgt_vs_points->GetHistogram()->SetMinimum(min_wgt-wgtsErr[0]);
-			wgt_vs_points->SetMarkerColor(kRed);
-			wgt_vs_points->SetLineColor(kRed);
-			wgt_vs_points->SetMarkerStyle(21);
-			madwgt_vs_points->Draw("CP3");
-			madwgt_vs_points->SetMarkerColor(kBlue);
-			madwgt_vs_points->SetLineColor(kBlue);
-			madwgt_vs_points->SetFillColor(kBlue);
-			madwgt_vs_points->SetFillStyle(3005);
-			//c->Print(TString("plots/test3_")+SSTR(entry)+"_"+SSTR(permutation)+".png");
-			c->Print(TString("plots/wgt_vs_cells_50000p_500c_100s_")+SSTR(entry)+"_"+SSTR(permutation)+".png");
-			//c->Print(TString("plots/wgt_vs_points_102000p_5100c_50s_")+SSTR(entry)+"_"+SSTR(permutation)+".png");
-			delete wgt_vs_points; wgt_vs_points = 0;
-			delete madwgt_vs_points; madwgt_vs_points = 0;
-			delete c;*/
-		
-		//break;
-		}
-		
+                combined_error = sqrt(Error_MW*Error_MW+Weight_TT_Error_cpp*Weight_TT_Error_cpp);                
+
+                cout << " diff : " << Weight_MW - Weight_TT_cpp << " +- " << combined_error << endl;
+
 		Weight_TT_Error_cpp = TMath::Sqrt(Weight_TT_Error_cpp);
 		Weighted_TT_cpp = true;
 
@@ -848,4 +824,5 @@ int main(int argc, char *argv[])
 
 	delete treeReader; 
 }
+
 
